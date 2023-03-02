@@ -8,35 +8,32 @@ import cv2
 @st.cache_data(persist="disk")
 def detect_attribs(face):
     """
-    Function that detects gender, race and emotion for the detected face.
+    Function that detects gender and emotion for the detected face.
     """
-    results=DeepFace.analyze(face,actions=("gender","race","emotion"),enforce_detection=False)
+    results=DeepFace.analyze(face,actions=("gender","emotion"),enforce_detection=False)
     results=results[0]
     gender=results['dominant_gender']
-    race=results['dominant_race']
     emotion=results['dominant_emotion']
-    return gender,race,emotion
+    return gender,emotion
 
 @st.cache_data(persist="disk")
 def mark_faces(image,faces):
     """
-    Function returns the gender, race and emotion of all the detected faces and returns them in the form of arrays. 
+    Function returns the gender and emotion of all the detected faces and returns them in the form of arrays. 
     """
     face_images=[]
     genders=[]
-    races=[]
     emotions=[]
     for face in faces:
         x1, y1, width, height = face['box']
         x2, y2 = x1 + width, y1 + height
         extracted_face=image[y1:y2,x1:x2]
-        gender,race,emotion=detect_attribs(extracted_face)
+        gender,emotion=detect_attribs(extracted_face)
         face_images.append(extracted_face)
         genders.append(gender)
-        races.append(race)
         emotions.append(emotion)
         image=cv2.rectangle(image,(x1,y1),(x2,y2),color=(0,255,0),thickness=2)
-    return image,face_images,genders,races,emotions
+    return image,face_images,genders,emotions
 
 upload_flag=0
 faces_in_each_row=4
@@ -67,7 +64,8 @@ if uploaded_image is None:
     upload_flag=1
     with col2.expander("Sample image for testing"):
         st.image('Images/faces.jpeg')
-st.snow()
+
+        
 if uploaded_image is not None:
     image=Image.open(uploaded_image)
     img_array=np.array(image)
@@ -82,7 +80,7 @@ if uploaded_image is not None:
         st.success(":heavy_check_mark: Image Uploaded Successfully. Detecting faces and attributes. :heavy_check_mark:")
         st.info("The execution time depends on the number of faces in the image. Please Wait!!!")
         with st.spinner("Processing"):
-            processed_image,face_images,genders,races,emotions=mark_faces(img_array,faces)
+            processed_image,face_images,genders,emotions=mark_faces(img_array,faces)
             genders=['Male' if x=='Man' else 'Female' for x in genders]
             face_images=[cv2.resize(x, (200, 200),interpolation = cv2.INTER_LINEAR) for x in face_images]
             st.markdown("<h3 style='text-align:center'><u> Processeed Image </u></h3>",unsafe_allow_html=True)
@@ -99,7 +97,6 @@ if uploaded_image is not None:
                     with column_array[i%faces_in_each_row]:
                         st.image(face_images[i])
                         st.markdown("**Gender** : "+genders[i])
-                        st.markdown("**Race** : "+races[i])
                         st.markdown("**Emotion** : "+emotions[i])
         st.balloons()
        
